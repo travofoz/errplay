@@ -1,0 +1,59 @@
+{
+  "name": "errplay",
+  "version": "1.0.0",
+  "description": "A framework-agnostic client-side error logger for development that persists across HMR reloads and streams errors to your terminal.",
+  "main": "server.js",
+  "exports": {
+    ".": "./server.js",
+    "./client": "./client.js",
+    "./nuxt": "./nuxt.js"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/travofoz/errplay.git"
+  },
+  "keywords": [
+    "error",
+    "errors",
+    "debug",
+    "development",
+    "hmr",
+    "hot-reload",
+    "nextjs",
+    "sveltekit",
+    "express",
+    "vite",
+    "nuxt",
+    "remix",
+    "astro",
+    "logging",
+    "terminal",
+    "error-logging",
+    "error-tracking"
+  ],
+  "author": "travofoz <travis@lotek.org>",
+  "license": "MIT",
+  "files": [
+    "client.js",
+    "server.js",
+    "nuxt.js",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "h3": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "h3": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "h3": "^1.11.1"
+  }
+}
+
