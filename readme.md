@@ -95,7 +95,8 @@ File: `pages/api/__dev__/errors.js`
 ```javascript
 import { ErrplayPagesHandler } from 'errplay';
 
-export default ErrplayPagesHandler;```
+export default ErrplayPagesHandler;
+```
 
 #### Nuxt 3
 File: `server/api/__dev__/errors.post.ts` (or `.js`)
