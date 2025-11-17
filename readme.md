@@ -133,7 +133,8 @@ export const POST = ErrplayHandler;
 ```
 
 #### Express
-In your main server file (e.g., `server.js`):```javascript
+In your main server file (e.g., `server.js`):
+```javascript
 import express from 'express';
 import { ErrplayExpressMiddleware } from 'errplay';
 
