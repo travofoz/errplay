@@ -30,12 +30,19 @@ Setup is a two-step process: initializing the client-side listener and creating 
 
 ### 1. Client-Side Setup
 
-Import and call `initErrplay` in your main client-side entry point with the required `endpoint`. This should be a file that runs once when your application loads in the browser.
+Import and call `initErrplay` in your main client-side entry point with the r99equired `endpoint`. This should be a file that runs once when your application loads in the browser.
 
 #### Next.js (App Router)
+
+There are two ways to set up `errplay` in the App Router: a quick start for immediate testing, and a best practice for optimized production apps.
+
+**1. Quick Start**
+
+This is the fastest way to get started and see `errplay` in action. It involves turning your root layout into a Client Component.
+
 File: `app/layout.js`
 ```javascript
-'use client'; // Required for App Router
+'use client'; // This makes the root layout a Client Component
 import { initErrplay } from 'errplay/client';
 
 // Initialize with your endpoint
@@ -45,6 +52,62 @@ export default function RootLayout({ children }) {
   return (
     <html>
       <body>{children}</body>
+    </html>
+  );
+}
+```
+
+> **Note:** While this is the quickest method, it turns your entire root layout into a Client Component. For production applications, the Best Practice pattern below is recommended to keep your root layout as a high-performance Server Component.
+
+**2. Best Practice for Production Apps**
+
+This pattern keeps your root `layout.js` as a pure Server Component by isolating the dev-only client code into its own component.
+
+**First, create a `DevTools` component:**
+
+File: `components/DevTools.js`
+```javascript
+'use client';
+
+import { useEffect } from 'react';
+
+// This component will be a no-op in production
+export function DevTools() {
+  useEffect(() => {
+    // This check ensures the code is only included in development bundles.
+    // In production, the entire block is eliminated by dead-code elimination.
+    if (process.env.NODE_ENV === 'development') {
+      import('errplay/client').then(module => {
+        module.initErrplay({ endpoint: '/api/__dev__/errors' });
+      });
+    }
+  }, []);
+
+  // This component renders nothing in the DOM
+  return null;
+}
+```
+
+**Then, add the component to your Root Layout:**
+
+Now, your `layout.js` can remain a clean Server Component.
+
+File: `app/layout.js`
+```javascript
+import { DevTools } from '../components/DevTools';
+
+export const metadata = {
+  title: 'My Awesome App',
+  // ...
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <DevTools />
+      </body>
     </html>
   );
 }
