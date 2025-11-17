@@ -1,6 +1,6 @@
 {
   "name": "errplay",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A framework-agnostic client-side error logger for development that persists across HMR reloads and streams errors to your terminal.",
   "main": "server.js",
   "exports": {
@@ -56,4 +56,3 @@
     "h3": "^1.11.1"
   }
 }
-
