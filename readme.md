@@ -38,6 +38,16 @@ npm run dev
 
 Then visit `http://localhost:3000` and click buttons to trigger errors — watch your terminal for colored output.
 
+### SvelteKit
+
+```bash
+cd errplay/examples/sveltekit
+npm install
+npm run dev
+```
+
+Visit `http://localhost:5173` and do the same.
+
 ## Usage
 
 Setup is a two-step process: initializing the client-side listener and creating the server-side API endpoint to receive the logs.
