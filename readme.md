@@ -13,7 +13,7 @@ Never again lose an error message that happens right before a hot reload. This u
 - **Detailed Logging**: Captures stack traces, line/column numbers, and properly serializes logged objects (handling circular references).
 - **Broad Framework Support**: Provides ready-to-use handlers for Next.js, Nuxt, SvelteKit, Express, Remix, Astro, and more.
 - **Zero Production Overhead**: The entire module is disabled when `process.env.NODE_ENV` is not `'development'`.
-- **Colored Terminal Output**: ANSI color codes make errors stand out in your dev console.
+- **Colored Terminal Output**: ANSI colors when writing to a TTY, plain text when piped (`ls --color=auto` style). Respects the `NO_COLOR` environment variable.
 - **Explicit Configuration**: No magic defaults—you must explicitly specify your endpoint.
 
 ## Installation
@@ -247,6 +247,20 @@ initErrplay({
 });
 ```
 
+### `dedupWindow` (optional)
+Minimum milliseconds between identical errors on the client before they're treated as duplicates. Default `50`. This prevents React dev mode from producing two log entries when it dispatches the same error event twice.
+
+The server also performs authoritative exact-match dedup — two payloads with the same `type`, `message`, `stack`, and client `timestamp` are treated as one, regardless of when they arrive. This catches reload-flush re-sends without any time window. The dedup cache is hoisted to `globalThis` to survive Next.js HMR server-bundle re-evaluation, and resets naturally on full server restart (so errors from a past process log fresh).
+
+Set to `0` to disable the client-side optimization (the server still deduplicates).
+
+```javascript
+initErrplay({
+  endpoint: '/api/__dev__/errors',
+  dedupWindow: 100, // more forgiving
+});
+```
+
 ### Automatic Stack Cleaning
 Bundler URL schemes (`webpack-internal://`, `turbopack://`, `file://`, etc.) are automatically stripped using an RFC 3986 universal pattern — no bundler-specific code, future-proof across frameworks.
 
@@ -254,9 +268,10 @@ Bundler URL schemes (`webpack-internal://`, `turbopack://`, `file://`, etc.) are
 
 1.  **Client Initialization**: When `initErrplay()` is called, it attaches global error listeners to the `window` object.
 2.  **Error Capture**: Any uncaught exception, unhandled promise rejection, or `console.error` call is captured with full details.
-3.  **Dual Action**: Errors are both sent immediately to the server via `navigator.sendBeacon` and stored in `sessionStorage` for recovery.
-4.  **HMR Handling**: On page reload (including HMR), the script checks for stored errors and flushes them to the server before listeners are re-attached.
-5.  **Terminal Output**: The server-side handler logs formatted error details to your console with color coding.
+3.  **Client Dedup**: Within N milliseconds (default 50), identical errors are silently dropped on the client to avoid redundant beacon requests from React's double-dispatch behavior.
+4.  **Send + Storage**: Errors are sent immediately to the server via `navigator.sendBeacon` and stored in `sessionStorage` for crash recovery. If `sendBeacon` fails to queue, the error is kept in storage for retry on the next pageload.
+5.  **HMR Handling**: On page reload (including HMR), the script checks for stored errors and flushes them to the server before listeners are re-attached. The server's exact-match dedup (by `type`, `message`, `stack`, and original `timestamp`) silently drops any re-send — so you never see a duplicate even after a reload. The dedup cache uses `globalThis` to survive Next.js server-bundle re-evaluation across HMR cycles.
+6.  **Terminal Output**: The server-side handler logs formatted error details to your console. ANSI colors are used when stdout is a TTY; plain text when piped (respects `NO_COLOR`). Full stacks are displayed — any truncation is controlled client-side via `stackLimit`. The `[SOURCE]` field shows the file path without redundant line:col (those are already in the stack frames).
 
 ## Production Safety
 

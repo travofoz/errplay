@@ -19,6 +19,9 @@
  * @param {Function} [options.stackFilter] - Optional filter for stack frames. Receives the frame line (string),
  *   return true to keep it, false to drop it. Applied on top of the default filter.
  * @param {number} [options.stackLimit] - Optional max frames to include in the stack (excluding the error message).
+ * @param {number} [options.dedupWindow=50] - Minimum ms between identical errors on the client before they're treated as
+ *   duplicates. Catches React dev mode dispatching the same error event twice. Server-side exact-match dedup is always-on
+ *   as the authoritative suppressant — this is purely an optimization to avoid redundant beacon requests. Set to 0 to disable.
  * @throws {Error} If endpoint is not provided.
  */
 export function initErrplay(options) {
@@ -32,6 +35,7 @@ export function initErrplay(options) {
   const ENDPOINT = options.endpoint;
   const stackFilter = typeof options.stackFilter === 'function' ? options.stackFilter : null;
   const stackLimit = typeof options.stackLimit === 'number' ? options.stackLimit : null;
+  const dedupWindow = typeof options.dedupWindow === 'number' ? options.dedupWindow : 50;
 
   // Guard against non-browser environments, production builds, or re-initialization.
   if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development' || window.__errplayInit) {
@@ -96,6 +100,22 @@ export function initErrplay(options) {
   };
 
   /**
+   * Deduplication: identical errors within dedupWindow ms are treated as one.
+   * This catches React dev mode dispatching the same error event twice.
+   * In-memory only — lost on crash, but only 1 copy was stored, so flush is clean.
+   */
+  let _lastFp = '';
+  let _lastTs = 0;
+
+  const isDuplicate = (fp) => {
+    const now = Date.now();
+    if (fp === _lastFp && now - _lastTs < dedupWindow) return true;
+    _lastFp = fp;
+    _lastTs = now;
+    return false;
+  };
+
+  /**
    * Stores an error in sessionStorage for recovery after HMR reloads.
    * Silently fails to prevent cascading errors during error handling.
    * @param {object} payload - The error data to persist.
@@ -143,8 +163,10 @@ export function initErrplay(options) {
       stack: cleanStack(event.error?.stack),
       timestamp: Date.now(),
     };
-    storeError(payload);
-    sendError(payload);
+    if (!isDuplicate('error|' + payload.message + '|' + payload.stack)) {
+      storeError(payload);
+      sendError(payload);
+    }
   });
 
   // Capture unhandled Promise rejections.
@@ -155,8 +177,10 @@ export function initErrplay(options) {
       stack: cleanStack(event.reason?.stack),
       timestamp: Date.now(),
     };
-    storeError(payload);
-    sendError(payload);
+    if (!isDuplicate('unhandledRejection|' + payload.message + '|' + payload.stack)) {
+      storeError(payload);
+      sendError(payload);
+    }
   });
 
   // Intercept console.error to capture explicit logs.
@@ -168,8 +192,10 @@ export function initErrplay(options) {
       args: args.map(arg => serialize(arg)),
       timestamp: Date.now(),
     };
-    storeError(payload);
-    sendError(payload);
+    if (!isDuplicate('console.error|' + JSON.stringify(payload.args))) {
+      storeError(payload);
+      sendError(payload);
+    }
   };
 }
 

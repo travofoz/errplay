@@ -9,37 +9,56 @@
  * Only responds to requests when NODE_ENV is 'development'.
  */
 
+/** Deduplication cache: exact match on type|message|stack|args|client-timestamp.
+ *  Catches reload-flush re-sends and same-tick double-dispatch without any time window.
+ *  Hoisted to globalThis to survive Next.js HMR server-bundle re-evaluation.
+ *  Resets on full server restart — correct: errors from a dead session should re-log. */
+const _seen = globalThis.__errplaySeen || (globalThis.__errplaySeen = new Set());
+
+/** Color helper: emits ANSI codes only when stdout is a TTY and NO_COLOR is unset.
+ *  Matches ls --color=auto behavior — colors in terminal, plain text when piped. */
+const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
+const c = (code, s) => useColor ? `\x1b[${code}m${s}\x1b[0m` : s;
+
 /**
  * Shared logic to log a client-side error payload to the console.
- * Formats output with ANSI color codes for better readability in the terminal.
+ * Deduplicates by exact match on type+message+stack+args+client-timestamp — catches
+ * reload-flush re-sends and same-tick double-dispatch without any time window.
+ * Uses a globalThis-hoisted Set to survive Next.js HMR server-bundle re-evaluation.
+ * Output uses ANSI colors when writing to a TTY, plain text when piped (see useColor above).
  * @param {object} body - The parsed JSON body from the request.
  */
 export function logErrorPayload(body) {
   if (!body || typeof body !== 'object' || !body.type) return;
 
+  // Server-side dedup: exact match on the client's original timestamp.
+  // The flush after reload carries the SAME timestamp as the original send,
+  // so this catches all replay duplicates regardless of when they arrive.
+  const fp = body.type + '|' + (body.message || '') + '|' + (body.stack || '') + '|' + JSON.stringify(body.args || '') + '|' + (body.timestamp || '');
+  if (_seen.has(fp)) return;
+  _seen.add(fp);
+
   const timestamp = new Date(body.timestamp).toISOString();
 
-  console.log('\n\x1b[31m========== CLIENT ERROR ==========\x1b[0m'); // Red banner
-  console.log(`\x1b[36m[TYPE]\x1b[0m      \x1b[33m${body.type}\x1b[0m`); // Cyan label, Yellow type
-  console.log(`\x1b[36m[TIME]\x1b[0m      ${timestamp}`);
+  console.log('\n' + c('31', '========== CLIENT ERROR =========='));
+  console.log(c('36', '[TYPE]') + '      ' + c('33', body.type));
+  console.log(c('36', '[TIME]') + '      ' + timestamp);
 
   if (body.message) {
-    console.log(`\x1b[36m[MESSAGE]\x1b[0m   ${body.message}`);
+    console.log(c('36', '[MESSAGE]') + '   ' + body.message);
   }
   if (body.filename) {
-    console.log(`\x1b[36m[FILE]\x1b[0m      ${body.filename}:${body.lineno}:${body.colno}`);
+    console.log(c('36', '[SOURCE]') + '    ' + body.filename);
   }
   if (body.stack) {
-    const frames = body.stack.split('\n');
-    console.log(`\x1b[36m[STACK]\x1b[0m\n${frames.slice(0, 4).join('\n')}`);
-    if (frames.length > 4) console.log(`  ... and ${frames.length - 4} more frames`);
+    console.log(c('36', '[STACK]') + '\n' + body.stack);
   }
   if (body.args && Array.isArray(body.args)) {
-    console.log('\x1b[36m[ARGS]\x1b[0m');
+    console.log(c('36', '[ARGS]'));
     console.dir(body.args, { depth: 5 });
   }
 
-  console.log('\x1b[31m==================================\x1b[0m\n');
+  console.log(c('31', '==================================') + '\n');
 }
 
 /**
