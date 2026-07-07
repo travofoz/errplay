@@ -257,8 +257,8 @@ import { ErrplayExpressMiddleware } from 'errplay';
 
 const app = express();
 
-// This is required to parse the JSON body
-app.use(express.json());
+// Required to parse both sendBeacon (text/plain) and standard JSON requests
+app.use(express.json({ type: ['application/json', 'text/plain'] }));
 
 // Mount the error logging route
 app.post('/api/__dev__/errors', ErrplayExpressMiddleware);

@@ -7,7 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = 3001
 
-app.use(express.json())
+app.use(express.json({ type: ['application/json', 'text/plain'] }))
 app.use(express.static(join(__dirname, 'public')))
 app.use('/node_modules', express.static(join(__dirname, 'node_modules')))
 app.post('/api/errplay', ErrplayExpressMiddleware)

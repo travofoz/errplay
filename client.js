@@ -38,7 +38,7 @@ export function initErrplay(options) {
   const dedupWindow = typeof options.dedupWindow === 'number' ? options.dedupWindow : 50;
 
   // Guard against non-browser environments, production builds, or re-initialization.
-  if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development' || window.__errplayInit) {
+  if (typeof window === 'undefined' || (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'development') || window.__errplayInit) {
     return;
   }
 
