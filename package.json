@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/travofoz/errplay.git"
+    "url": "git+https://github.com/travofoz/errplay.git"
   },
   "keywords": [
     "error",

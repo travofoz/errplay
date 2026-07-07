@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Server-side handlers for the errplay client.
  * 
@@ -49,7 +50,7 @@ export function logErrorPayload(body) {
   if (body.type === 'console.error') {
     const match = _recent.find(r =>
       r.type !== 'console.error' &&
-      Math.abs(r.ts - body.timestamp) < 50
+      body.timestamp - r.ts < 50
     );
     if (match) {
       console.log(c('36', '[CONTEXT]'));
