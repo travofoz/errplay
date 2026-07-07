@@ -25,6 +25,19 @@ Install the package as a development dependency:
 npm install errplay --save-dev
 ```
 
+## Demo
+
+See errplay in action without any setup:
+
+```bash
+git clone https://github.com/travofoz/errplay.git
+cd errplay/examples/nextjs
+npm install
+npm run dev
+```
+
+Then visit `http://localhost:3000` and click buttons to trigger errors — watch your terminal for colored output.
+
 ## Usage
 
 Setup is a two-step process: initializing the client-side listener and creating the server-side API endpoint to receive the logs.
