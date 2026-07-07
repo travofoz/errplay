@@ -266,9 +266,10 @@ errplay is framework-agnostic — same client, same server — but each framewor
 | React / Next.js | ✅ Yes | React dispatches both `error` event + `console.error` |
 | Vue / Nuxt | ✅ Yes | Vue component stacks arrive via `console.error` |
 | Svelte / SvelteKit | ❌ No | Svelte catches render errors internally, only calls `console.error` |
+| Astro | ✅ Yes | Vanilla JS client — throws hit `window.onerror` |
 | Vanilla JS | ✅ Yes | Raw throws hit `window.onerror` naturally |
 
-**Dev overlays:** errplay does not suppress any framework's development error overlay. React Dev Overlay (Next.js) is DOM-injected by React itself. Vite's overlay (SvelteKit, vanilla) uses a WebSocket channel from the dev server. Both are orthogonal to errplay's browser-level interception.
+**Dev overlays:** errplay does not suppress any framework's development error overlay. React Dev Overlay (Next.js) is DOM-injected by React itself. Vite's overlay (SvelteKit, vanilla) uses a WebSocket channel from the dev server. Astro has no built-in dev overlay. All are orthogonal to errplay's browser-level interception.
 
 ## Configuration
 
