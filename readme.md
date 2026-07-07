@@ -13,6 +13,7 @@ Never again lose an error message that happens right before a hot reload. This u
 - **Detailed Logging**: Captures stack traces, line/column numbers, and properly serializes logged objects (handling circular references).
 - **Broad Framework Support**: Provides ready-to-use handlers for Next.js, Nuxt, SvelteKit, Express, Remix, Astro, and more.
 - **Zero Production Overhead**: The entire module is disabled when `process.env.NODE_ENV` is not `'development'`.
+- **Tree-Shakeable**: If you wrap the import in a `process.env.NODE_ENV === 'development'` guard, bundlers can eliminate it from production bundles entirely. Without that wrapper, the module is still bundled but instantly no-ops at runtime. In practice, the client is ~2KB min+gzip — tree-shaking is a rounding error in any real app.
 - **Colored Terminal Output**: ANSI colors when writing to a TTY, plain text when piped (`ls --color=auto` style). Respects the `NO_COLOR` environment variable.
 - **Context Merge**: `console.error` calls that closely follow an `error` event (within the dedup window) are merged into the error entry as `[CONTEXT]` instead of creating a separate `console.error` entry. This captures framework-provided component stacks, reactive traces, and template paths automatically — no framework-specific code needed.
 - **Explicit Configuration**: No magic defaults—you must explicitly specify your endpoint.
