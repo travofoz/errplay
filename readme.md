@@ -237,6 +237,19 @@ app.post('/api/__dev__/errors', ErrplayExpressMiddleware);
 app.listen(3000, () => console.log('Server is running...'));
 ```
 
+## Framework Notes
+
+errplay is framework-agnostic — same client, same server — but each framework propagates errors differently. Here's what to expect for `[CONTEXT]` merge (combining a `window` `error` event with a following `console.error` within 50ms):
+
+| Framework | Render errors merge? | Why |
+|---|---|---|
+| React / Next.js | ✅ Yes | React dispatches both `error` event + `console.error` |
+| Vue / Nuxt | ✅ Yes | Vue component stacks arrive via `console.error` |
+| Svelte / SvelteKit | ❌ No | Svelte catches render errors internally, only calls `console.error` |
+| Vanilla JS | ✅ Yes | Raw throws hit `window.onerror` naturally |
+
+**Dev overlays:** errplay does not suppress any framework's development error overlay. React Dev Overlay (Next.js) is DOM-injected by React itself. Vite's overlay (SvelteKit, vanilla) uses a WebSocket channel from the dev server. Both are orthogonal to errplay's browser-level interception.
+
 ## Configuration
 
 ### `endpoint` (required)
