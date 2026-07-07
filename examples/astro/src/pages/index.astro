@@ -1,0 +1,54 @@
+---
+// server-rendered
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>errplay Astro Demo</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: system-ui, sans-serif; padding: 2rem; max-width: 480px; margin: 0 auto; }
+      h1 { font-size: 1.75rem; margin: 0 0 0.5rem; }
+      p { margin: 0 0 0.25rem; color: #555; }
+      .note { font-size: 0.85rem; color: #888; margin-bottom: 1.5rem; }
+      code { background: #eee; padding: 1px 4px; border-radius: 3px; }
+      .buttons { display: flex; flex-direction: column; gap: 0.75rem; }
+      .buttons button { padding: 0.75rem 1rem; font-size: 1rem; cursor: pointer; border: none; border-radius: 6px; font-weight: 600; }
+      .red { background-color: #dc2626; color: #fff; }
+    </style>
+  </head>
+  <body>
+    <h1>errplay Astro Demo</h1>
+    <p>Click a button to trigger an error — watch your terminal!</p>
+    <p class="note">
+      Run <code>npm run dev</code> in the project root.
+    </p>
+    <div class="buttons">
+      <button class="red" id="btn-throw">Throw Error</button>
+      <button class="red" id="btn-reject">Unhandled Promise Rejection</button>
+      <button class="red" id="btn-console">console.error</button>
+      <button class="red" id="btn-async">Async Error (setTimeout)</button>
+      <button class="red" id="btn-nested">Nested Error</button>
+    </div>
+
+    <script>
+      import { initErrplay } from 'errplay/client'
+      initErrplay({ endpoint: '/api/errplay' })
+
+      const byId = id => document.getElementById(id)
+      byId('btn-throw').onclick = () => { throw new Error('Synchronous error!') }
+      byId('btn-reject').onclick = () => Promise.reject(new Error('Promise rejected!'))
+      byId('btn-console').onclick = () => console.error('Manual console.error', { detail: 'some context' })
+      byId('btn-async').onclick = () => setTimeout(() => { throw new Error('Async timeout error!') }, 100)
+      byId('btn-nested').onclick = () => {
+        const a = () => b()
+        const b = () => c()
+        const c = () => { throw new Error('Nested error!') }
+        a()
+      }
+    </script>
+  </body>
+</html>
