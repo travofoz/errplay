@@ -68,6 +68,16 @@ npm run dev
 
 Visit `http://localhost:4321` and do the same.
 
+### Express
+
+```bash
+cd errplay/examples/express
+npm install
+npm run dev
+```
+
+Visit `http://localhost:3001` and do the same.
+
 ## Usage
 
 Setup is a two-step process: initializing the client-side listener and creating the server-side API endpoint to receive the logs.
