@@ -48,6 +48,16 @@ npm run dev
 
 Visit `http://localhost:5173` and do the same.
 
+### Vite (Vanilla JS)
+
+```bash
+cd errplay/examples/vite
+npm install
+npm run dev
+```
+
+Visit `http://localhost:5173` and click buttons — no framework, just HTML + a thin Vite middleware.
+
 ## Usage
 
 Setup is a two-step process: initializing the client-side listener and creating the server-side API endpoint to receive the logs.
