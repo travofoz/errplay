@@ -1,0 +1,9 @@
+node_modules/
+.next/
+.svelte-kit/
+build/
+dist/
+.astro/
+out/
+*.tgz
+.env

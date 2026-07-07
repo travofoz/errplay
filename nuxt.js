@@ -1,4 +1,4 @@
-import { readBody } from 'h3';
+import { readBody, sendNoContent, sendError } from 'h3';
 import { isDevelopmentPostRequest, logErrorPayload } from './server.js';
 
 /**
@@ -21,11 +21,9 @@ export async function ErrplayNuxtHandler(event) {
     } catch (e) {
       console.error('errplay: Failed to parse error log body in Nuxt handler.', e);
     }
-    event.node.res.statusCode = 204;
-    return event.node.res.end();
+    return sendNoContent(event, 204);
   }
   
-  event.node.res.statusCode = 404;
-  return event.node.res.end();
+  return sendError(event, 404, 'Not Found');
 }
 

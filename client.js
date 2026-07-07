@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Client-side error logger for development environments.
  * 
@@ -37,19 +38,19 @@ export function initErrplay(options) {
   const stackLimit = typeof options.stackLimit === 'number' ? options.stackLimit : null;
   const dedupWindow = typeof options.dedupWindow === 'number' ? options.dedupWindow : 50;
 
+  /**
+   * Returns true only in a browser dev environment.
+   * Production builds, SSR, and non-browser runtimes return false.
+   */
+  const isDev = () => typeof window !== 'undefined' && typeof process !== 'undefined' && process.env.NODE_ENV === 'development';
+
   // Guard against non-browser environments, production builds, or re-initialization.
-  if (typeof window === 'undefined' || (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'development') || window.__errplayInit) {
+  if (!isDev() || window.__errplayInit) {
     return;
   }
 
-  /**
-   * Recursively serializes values for JSON transmission.
-   * Handles circular references, depth limits, Error objects, and special types.
-   * @param {*} obj - The value to serialize.
-   * @param {WeakSet} [seen=new WeakSet()] - Tracks visited objects to detect circular refs.
-   * @param {number} [depth=0] - Current recursion depth (max 5).
-   * @returns {*} Serialized value safe for JSON.stringify.
-   */
+  const cleanFilename = (f) => f && !f.includes('node_modules') ? f : undefined;
+
   const cleanStack = (stack) => {
     if (!stack) return stack;
     const lines = stack.split('\n');
@@ -66,6 +67,14 @@ export function initErrplay(options) {
     return cleaned.join('\n');
   };
 
+  /**
+   * Recursively serializes values for JSON transmission.
+   * Handles circular references, depth limits, Error objects, and special types.
+   * @param {*} obj - The value to serialize.
+   * @param {WeakSet} [seen=new WeakSet()] - Tracks visited objects to detect circular refs.
+   * @param {number} [depth=0] - Current recursion depth (max 5).
+   * @returns {*} Serialized value safe for JSON.stringify.
+   */
   const serialize = (obj, seen = new WeakSet(), depth = 0) => {
     if (depth > 5) return '[Max depth]';
     if (obj === null || obj === undefined) return obj;
@@ -96,7 +105,11 @@ export function initErrplay(options) {
    * @param {object} payload - The error data to transmit.
    */
   const sendError = (payload) => {
-    navigator.sendBeacon(ENDPOINT, JSON.stringify(payload));
+    try {
+      navigator.sendBeacon(ENDPOINT, JSON.stringify(payload));
+    } catch (e) {
+      console.warn('errplay: Failed to send error.', e);
+    }
   };
 
   /**
@@ -155,7 +168,7 @@ export function initErrplay(options) {
     const payload = {
       type: 'error',
       message: event.message,
-      filename: (f => f && !f.includes('node_modules') ? f : undefined)(
+      filename: cleanFilename(
         event.filename?.replace(/[a-zA-Z][a-zA-Z0-9+.-]*:\/\/\/?[^.]*\.\//, '')
       ),
       lineno: event.lineno,
