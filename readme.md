@@ -14,6 +14,7 @@ Never again lose an error message that happens right before a hot reload. This u
 - **Broad Framework Support**: Provides ready-to-use handlers for Next.js, Nuxt, SvelteKit, Express, Remix, Astro, and more.
 - **Zero Production Overhead**: The entire module is disabled when `process.env.NODE_ENV` is not `'development'`.
 - **Colored Terminal Output**: ANSI colors when writing to a TTY, plain text when piped (`ls --color=auto` style). Respects the `NO_COLOR` environment variable.
+- **Context Merge**: `console.error` calls that closely follow an `error` event (within the dedup window) are merged into the error entry as `[CONTEXT]` instead of creating a separate `console.error` entry. This captures framework-provided component stacks, reactive traces, and template paths automatically — no framework-specific code needed.
 - **Explicit Configuration**: No magic defaults—you must explicitly specify your endpoint.
 
 ## Installation
@@ -273,9 +274,6 @@ Bundler URL schemes (`webpack-internal://`, `turbopack://`, `file://`, etc.) are
 5.  **HMR Handling**: On page reload (including HMR), the script checks for stored errors and flushes them to the server before listeners are re-attached. The server's exact-match dedup (by `type`, `message`, `stack`, and original `timestamp`) silently drops any re-send — so you never see a duplicate even after a reload. The dedup cache uses `globalThis` to survive Next.js server-bundle re-evaluation across HMR cycles.
 6.  **Terminal Output**: The server-side handler logs formatted error details to your console. ANSI colors are used when stdout is a TTY; plain text when piped (respects `NO_COLOR`). Full stacks are displayed — any truncation is controlled client-side via `stackLimit`. The `[SOURCE]` field shows the file path without redundant line:col (those are already in the stack frames).
 
-## Upcoming
-
-- **1.3.0 — Context Merge**: `console.error` calls that closely follow an `error` event (within the dedup window) will be merged into the error entry as `[CONTEXT]` instead of creating a separate `console.error` entry. This captures framework-provided component stacks, reactive traces, and template paths automatically — no framework-specific code needed.
 
 ## Production Safety
 

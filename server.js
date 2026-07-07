@@ -15,6 +15,11 @@
  *  Resets on full server restart — correct: errors from a dead session should re-log. */
 const _seen = globalThis.__errplaySeen || (globalThis.__errplaySeen = new Set());
 
+/** Rolling buffer of recent non-console.error entries for context merge.
+ *  When console.error arrives within 50ms of a preceding error, its args are
+ *  printed as [CONTEXT] beneath the parent instead of a standalone block. */
+const _recent = [];
+
 /** Color helper: emits ANSI codes only when stdout is a TTY and NO_COLOR is unset.
  *  Matches ls --color=auto behavior — colors in terminal, plain text when piped. */
 const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
@@ -38,6 +43,22 @@ export function logErrorPayload(body) {
   if (_seen.has(fp)) return;
   _seen.add(fp);
 
+  // Context merge: if this is console.error and a non-console.error entry
+  // arrived within 50ms (the client-side dedupWindow), print as [CONTEXT]
+  // beneath the parent instead of a standalone block.
+  if (body.type === 'console.error') {
+    const match = _recent.find(r =>
+      r.type !== 'console.error' &&
+      Math.abs(r.ts - body.timestamp) < 50
+    );
+    if (match) {
+      console.log(c('36', '[CONTEXT]'));
+      console.dir(body.args, { depth: 5 });
+      console.log(c('31', '==================================') + '\n');
+      return;
+    }
+  }
+
   const timestamp = new Date(body.timestamp).toISOString();
 
   console.log('\n' + c('31', '========== CLIENT ERROR =========='));
@@ -59,6 +80,12 @@ export function logErrorPayload(body) {
   }
 
   console.log(c('31', '==================================') + '\n');
+
+  // Track non-console.error entries for future context merge.
+  if (body.type !== 'console.error') {
+    _recent.push({ type: body.type, ts: body.timestamp });
+    if (_recent.length > 20) _recent.shift();
+  }
 }
 
 /**
