@@ -30,7 +30,9 @@ export function logErrorPayload(body) {
     console.log(`\x1b[36m[FILE]\x1b[0m      ${body.filename}:${body.lineno}:${body.colno}`);
   }
   if (body.stack) {
-    console.log(`\x1b[36m[STACK]\x1b[0m\n${body.stack}`);
+    const frames = body.stack.split('\n');
+    console.log(`\x1b[36m[STACK]\x1b[0m\n${frames.slice(0, 4).join('\n')}`);
+    if (frames.length > 4) console.log(`  ... and ${frames.length - 4} more frames`);
   }
   if (body.args && Array.isArray(body.args)) {
     console.log('\x1b[36m[ARGS]\x1b[0m');

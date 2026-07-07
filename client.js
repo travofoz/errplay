@@ -16,6 +16,9 @@
  * 
  * @param {object} options - Configuration options.
  * @param {string} options.endpoint - REQUIRED. The API endpoint to send errors to.
+ * @param {Function} [options.stackFilter] - Optional filter for stack frames. Receives the frame line (string),
+ *   return true to keep it, false to drop it. Applied on top of the default filter.
+ * @param {number} [options.stackLimit] - Optional max frames to include in the stack (excluding the error message).
  * @throws {Error} If endpoint is not provided.
  */
 export function initErrplay(options) {
@@ -27,6 +30,8 @@ export function initErrplay(options) {
   }
 
   const ENDPOINT = options.endpoint;
+  const stackFilter = typeof options.stackFilter === 'function' ? options.stackFilter : null;
+  const stackLimit = typeof options.stackLimit === 'number' ? options.stackLimit : null;
 
   // Guard against non-browser environments, production builds, or re-initialization.
   if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development' || window.__errplayInit) {
@@ -41,6 +46,22 @@ export function initErrplay(options) {
    * @param {number} [depth=0] - Current recursion depth (max 5).
    * @returns {*} Serialized value safe for JSON.stringify.
    */
+  const cleanStack = (stack) => {
+    if (!stack) return stack;
+    const lines = stack.split('\n');
+    const cleaned = lines.filter((line, i) => {
+      if (i === 0) return true;
+      if (line.includes('node_modules') || line.includes('<anonymous>') || line.includes('[native]')) return false;
+      return stackFilter ? stackFilter(line) : true;
+    }).map(line => {
+      return line.replace(/[a-zA-Z][a-zA-Z0-9+.-]*:\/\/\/?[^.]*\.\//, '');
+    });
+    if (stackLimit) {
+      return cleaned.slice(0, stackLimit + 1).join('\n');
+    }
+    return cleaned.join('\n');
+  };
+
   const serialize = (obj, seen = new WeakSet(), depth = 0) => {
     if (depth > 5) return '[Max depth]';
     if (obj === null || obj === undefined) return obj;
@@ -50,7 +71,7 @@ export function initErrplay(options) {
     seen.add(obj);
 
     if (obj instanceof Error) {
-      return { __type: 'Error', name: obj.name, message: obj.message, stack: obj.stack };
+      return { __type: 'Error', name: obj.name, message: obj.message, stack: cleanStack(obj.stack) };
     }
     if (Array.isArray(obj)) {
       return obj.map(item => serialize(item, seen, depth + 1));
@@ -114,10 +135,12 @@ export function initErrplay(options) {
     const payload = {
       type: 'error',
       message: event.message,
-      filename: event.filename,
+      filename: (f => f && !f.includes('node_modules') ? f : undefined)(
+        event.filename?.replace(/[a-zA-Z][a-zA-Z0-9+.-]*:\/\/\/?[^.]*\.\//, '')
+      ),
       lineno: event.lineno,
       colno: event.colno,
-      stack: event.error?.stack,
+      stack: cleanStack(event.error?.stack),
       timestamp: Date.now(),
     };
     storeError(payload);
@@ -129,7 +152,7 @@ export function initErrplay(options) {
     const payload = {
       type: 'unhandledRejection',
       message: event.reason?.message || String(event.reason),
-      stack: event.reason?.stack,
+      stack: cleanStack(event.reason?.stack),
       timestamp: Date.now(),
     };
     storeError(payload);

@@ -215,14 +215,40 @@ app.listen(3000, () => console.log('Server is running...'));
 
 ## Configuration
 
-The `endpoint` is a required option. Specify it when calling `initErrplay`:
+### `endpoint` (required)
+The URL path to your dev server's error API endpoint. Must match the server-side route you create.
 
 ```javascript
 initErrplay({
-  endpoint: '/your/custom/error/endpoint'
+  endpoint: '/api/__dev__/errors'
 });
 ```
-The endpoint must match the server-side route you create. If the endpoint is not provided, the function will throw an error.
+
+### `stackFilter` (optional)
+A function to further filter which stack frames are kept. Receives each frame line (after default filtering and scheme stripping) and should return `true` to keep it or `false` to drop it.
+
+The default filter already drops `node_modules`, `<anonymous>`, and `[native]` frames. Use `stackFilter` to narrow further to your project's source directories:
+
+```javascript
+initErrplay({
+  endpoint: '/api/__dev__/errors',
+  // Only keep frames from your source directory
+  stackFilter: (line) => line.includes('/src/'),
+});
+```
+
+### `stackLimit` (optional)
+Maximum number of stack frames to include (excluding the error message line). Helps keep payloads small for AI agents or terminal readability.
+
+```javascript
+initErrplay({
+  endpoint: '/api/__dev__/errors',
+  stackLimit: 5,
+});
+```
+
+### Automatic Stack Cleaning
+Bundler URL schemes (`webpack-internal://`, `turbopack://`, `file://`, etc.) are automatically stripped using an RFC 3986 universal pattern — no bundler-specific code, future-proof across frameworks.
 
 ## How It Works
 
